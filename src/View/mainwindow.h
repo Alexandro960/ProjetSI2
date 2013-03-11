@@ -5,6 +5,11 @@
 
 #include "../Handle/imagedata.h"
 
+#include "../Handle/Parameters/combobox.h"
+#include "../Handle/Parameters/inputtext.h"
+#include "../Handle/Reader/folderreader.h"
+#include <QDialog>
+
 class VideoExtractor;
 class SubMdiWindowsImage;
 class SubMdiWindowsResults;
@@ -43,6 +48,13 @@ public slots :
     void showHideDockStreamControl(void);
     void sliderMoved(int);
     void windowStateChanged(Qt::WindowStates,Qt::WindowStates);
+    void setting(void);
+    void settingS(void);
+private slots:
+    void on_pushButton_clicked();
+
+    void on_pushButton_2_clicked();
+
 private:
     enum Mode{Default, Tabulation, Free};
     void updateSeek(void);
@@ -51,11 +63,16 @@ private :
     VideoExtractor * m_extractor;
     bool m_isHandleActived;
     bool m_isPlay;
+    QString methode;
+    QString pathImg;
+    VideoReader * cam1;
+    FolderReader * cam2;
     SubMdiWindowsImage * m_subImage;
     SubMdiWindowsImage * m_subImageSource1;
     SubMdiWindowsImage * m_subImageSource2;
     SubMdiWindowsResults * m_subResults;
     Ui::MainWindow *ui;
+    QDialog * Setting;
 };
 
 #endif // MAINWINDOW_H

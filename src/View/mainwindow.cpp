@@ -4,8 +4,9 @@
 #include "ui_mainwindow.h"
 #include "../Handle/Handle.h"
 #include "../Handle/videoextractor.h"
-#include "../Handle/Parameters/slider.h"
 #include "../Handle/Parameters/combobox.h"
+#include "../Handle/Parameters/slider.h"
+#include "../Handle/Parameters/handleparameters.h"
 #include "submdiwindowsimage.h"
 #include "submdiwindowsresults.h"
 
@@ -37,16 +38,16 @@ MainWindow::MainWindow(QWidget *parent) :
 
     m_extractor->changeHandleParameters( new ComboBox("Traitement", VirtualHandle::getAllHandleName(),
                                                       MainHandle),
-                                            ui->scrollAreaWidgetContents );
+                                         ui->scrollAreaWidgetContents );
     m_extractor->changePeriodeParameters( new Slider("Time", 200000000, 0, max) ,
                                           ui->scrollAreaWidgetContents );
 
-    /* obligatoire, Ã  n'appeler qu'une unique fois et dans une fonction /!\ */
+    /* obligatoire, Ã  n'appeler qu'une unique fois et dans une fonction /!\ */
     qRegisterMetaType<ImageDataPtr>("ImageDataPtr");
     connect( m_extractor, SIGNAL(imageHandled(ImageDataPtr,ImageDataPtr,ImageDataPtr) ),
              this, SLOT(setImage(ImageDataPtr,ImageDataPtr,ImageDataPtr) ) );
 
-    VideoReader * cam1 = new VideoReader();
+    cam1 = new VideoReader();
     cam1->useCamera(); //or FolderReader * cam1 = new FolderReader("img/");
 
     m_extractor->useSource(cam1, 0);
@@ -127,18 +128,18 @@ void MainWindow::changeMdiMode(int index)
 
         ui->mdiArea->reductAllExcept( std::set<SubMdiWindows *>({m_subImage, m_subImageSource1,
                                                                 m_subImageSource2, m_subResults}) );
-    }
-    else if( mode == Tabulation)
-    {
-        if(m_areaMode != Tabulation)
-            ui->mdiArea->setViewMode( QMdiArea::TabbedView );
-    }
-    else
-    {
-        if(m_areaMode == Tabulation)
-            ui->mdiArea->setViewMode( QMdiArea::SubWindowView );
-    }
-    m_areaMode = mode;
+}
+else if( mode == Tabulation)
+{
+    if(m_areaMode != Tabulation)
+        ui->mdiArea->setViewMode( QMdiArea::TabbedView );
+}
+else
+{
+if(m_areaMode == Tabulation)
+ui->mdiArea->setViewMode( QMdiArea::SubWindowView );
+}
+m_areaMode = mode;
 }
 
 
@@ -285,9 +286,69 @@ void MainWindow::windowStateChanged(Qt::WindowStates, Qt::WindowStates states)
     {
         QObject * sender = QObject::sender();
         if ( states &  Qt::WindowMinimized && ( sender == m_subImage || sender == m_subImageSource1
-                             || sender == m_subImageSource2 || sender == m_subResults )  )
+                                                || sender == m_subImageSource2 || sender == m_subResults )  )
             enterInFreeMode();
     }
+}
+
+void MainWindow::settingS(void)
+{
+    m_extractor->stop();
+    if(methode == "Camera")
+    {
+        //verifier si caméra deja utiliser TODO
+        cam1 = new VideoReader();
+        cam1->useCamera();
+        m_extractor->useSource(cam1, 0);
+    }
+    else
+    {
+        //Attention erreur seg a la fin de la lecture : Grab ? a verifier
+        //eteindre cam si utilisé TODO
+        cam2 = new FolderReader(pathImg.toStdString());
+        m_extractor->useSource(cam2, 0);
+    }
+
+    m_extractor->showParameters( ui->scrollAreaWidgetContents );
+    m_extractor->start();
+    Setting->setVisible(false);
+    updateSeek();
+}
+
+void MainWindow::setting(void)
+{
+    Setting = new QDialog();
+    Setting->setWindowTitle("Configuration");
+    QVBoxLayout * layout = new QVBoxLayout(Setting);
+    QPushButton *valider = new QPushButton("Ok");
+    connect(valider,SIGNAL(clicked()),this,SLOT(settingS()));
+    auto param = HandleParameters::build_comboBox("Choix source", QStringList({"Camera","Dossier"}));
+    auto path = HandleParameters::build_inputtext("Path",".", InputText::Directory );
+
+    auto lambda = [this, param,path, valider, layout](QVariant value, HandleParameters * hp)
+    {
+            hp->acceptChanges(value);
+            methode=param->toString();
+            if(methode == "Dossier")
+            {
+                path->showParameters(Setting);
+                pathImg=path->toString() + "/";
+                layout->addWidget(valider);
+            }
+            else
+            {
+                path->hideParameters();
+            }
+    };
+
+    param->setActionOnChangeValue(lambda);
+    path->setActionOnChangeValue(lambda);
+    valider->setDefault(true);
+    param->showParameters(Setting);
+    Setting->setLayout(layout);
+    layout->addWidget(valider);
+    Setting->adjustSize();
+    Setting->setVisible(true);
 }
 
 /*---------------------------------------------------------------------------------------------------
@@ -306,4 +367,14 @@ void MainWindow::updateSeek()
     ui->labelCurseur->setText("0");
 
     ui->sliderCurseur->setMaximum( m_extractor->numberOfFrame() );
+}
+
+void MainWindow::on_pushButton_clicked()
+{
+    setting();
+}
+
+void MainWindow::on_pushButton_2_clicked()
+{
+    setting();
 }
