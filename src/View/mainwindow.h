@@ -48,7 +48,7 @@ public slots :
     void showHideDockStreamControl(void);
     void sliderMoved(int);
     void windowStateChanged(Qt::WindowStates,Qt::WindowStates);
-    void setting(void);
+    void setting(int idsource);
     void settingS(void);
 private slots:
     void on_pushButton_clicked();
@@ -73,6 +73,7 @@ private :
     SubMdiWindowsResults * m_subResults;
     Ui::MainWindow *ui;
     QDialog * Setting;
+    int idsource;
 };
 
 #endif // MAINWINDOW_H

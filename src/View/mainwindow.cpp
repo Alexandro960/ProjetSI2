@@ -16,6 +16,7 @@ MainWindow::MainWindow(QWidget *parent) :
     m_extractor(new VideoExtractor() ),
     m_isHandleActived(true),
     m_isPlay(false),
+    pathImg("."),
     m_subImage(nullptr),
     m_subImageSource1(nullptr),
     m_subImageSource2(nullptr),
@@ -294,51 +295,52 @@ void MainWindow::windowStateChanged(Qt::WindowStates, Qt::WindowStates states)
 void MainWindow::settingS(void)
 {
     m_extractor->stop();
+    if(methode.isEmpty())
+        methode="Camera";
     if(methode == "Camera")
     {
-        //verifier si caméra deja utiliser TODO
         cam1 = new VideoReader();
-        cam1->useCamera();
-        m_extractor->useSource(cam1, 0);
+        cam1->useCamera(); //Attention quitte si deja utilisé (Brutal ?)
+        m_extractor->useSource(cam1, idsource);
     }
     else
     {
-        //Attention erreur seg a la fin de la lecture : Grab ? a verifier
-        //eteindre cam si utilisé TODO
         cam2 = new FolderReader(pathImg.toStdString());
-        m_extractor->useSource(cam2, 0);
+        m_extractor->useSource(cam2, idsource);
     }
 
     m_extractor->showParameters( ui->scrollAreaWidgetContents );
     m_extractor->start();
     Setting->setVisible(false);
+    methode.clear();
     updateSeek();
 }
 
-void MainWindow::setting(void)
+void MainWindow::setting(int idsource)
 {
+    this->idsource=idsource;
     Setting = new QDialog();
     Setting->setWindowTitle("Configuration");
     QVBoxLayout * layout = new QVBoxLayout(Setting);
     QPushButton *valider = new QPushButton("Ok");
     connect(valider,SIGNAL(clicked()),this,SLOT(settingS()));
     auto param = HandleParameters::build_comboBox("Choix source", QStringList({"Camera","Dossier"}));
-    auto path = HandleParameters::build_inputtext("Path",".", InputText::Directory );
+    auto path = HandleParameters::build_inputtext("Path",pathImg, InputText::Directory );
 
     auto lambda = [this, param,path, valider, layout](QVariant value, HandleParameters * hp)
     {
-            hp->acceptChanges(value);
-            methode=param->toString();
-            if(methode == "Dossier")
-            {
-                path->showParameters(Setting);
-                pathImg=path->toString() + "/";
-                layout->addWidget(valider);
-            }
-            else
-            {
-                path->hideParameters();
-            }
+        hp->acceptChanges(value);
+        methode=param->toString();
+        if(methode == "Dossier")
+        {
+            path->showParameters(Setting);
+            pathImg=path->toString() + "/";
+            layout->addWidget(valider);
+        }
+        else
+        {
+            path->hideParameters();
+        }
     };
 
     param->setActionOnChangeValue(lambda);
@@ -351,6 +353,15 @@ void MainWindow::setting(void)
     Setting->setVisible(true);
 }
 
+void MainWindow::on_pushButton_clicked()
+{
+    setting(0);
+}
+
+void MainWindow::on_pushButton_2_clicked()
+{
+    setting(1);
+}
 /*---------------------------------------------------------------------------------------------------
 ------------------------------------------------PRIVATE----------------------------------------------
 ---------------------------------------------------------------------------------------------------*/
@@ -367,14 +378,4 @@ void MainWindow::updateSeek()
     ui->labelCurseur->setText("0");
 
     ui->sliderCurseur->setMaximum( m_extractor->numberOfFrame() );
-}
-
-void MainWindow::on_pushButton_clicked()
-{
-    setting();
-}
-
-void MainWindow::on_pushButton_2_clicked()
-{
-    setting();
 }

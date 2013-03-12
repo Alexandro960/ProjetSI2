@@ -49,6 +49,11 @@ void VideoReader::useCamera(int idCamera)
     m_video = tmp;
 }
 
+VideoReader::~VideoReader()
+{
+    cvReleaseCapture(&m_video);
+}
+
 //fin video cvReleaseCapture
 
 void VideoReader::slid(int)
